@@ -1,0 +1,15 @@
+.env
+.streamlit/secrets.toml
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+marketpilot.db
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+uploads/products/*
+!uploads/products/.gitkeep
+

@@ -1,96 +1,58 @@
-🚀 MarketPilot AI
+# MarketPilot AI
 
-AI-Powered Multi-Agent E-Commerce Product Distribution & Marketing Platform
+MarketPilot AI is a local single-user MVP for managing products, calculating pricing guidance, and generating review-only marketplace listing previews. It includes SQLite persistence, validated local image storage, a Google ADK multi-agent workflow, and a Streamlit dashboard.
 
-MarketPilot AI is an intelligent multi-agent platform designed to help sellers analyze products, optimize pricing, generate SEO-friendly product listings, distribute products across e-commerce marketplaces, and automate digital marketing strategies.
+## Requirements
 
-Built using Python, Google Agent Development Kit (ADK), Google Gemini, and Streamlit, MarketPilot AI aims to simplify product distribution and marketing through specialized AI agents.
+- Python 3.10 or newer
+- A Gemini API key in `.env` to run live agent workflows. Tests use mocked agent outputs and do not call Gemini.
 
-🎯 Project Objectives
+## Setup
 
-- Simplify product onboarding for sellers.
-- Analyze product attributes and identify target audiences.
-- Generate SEO-optimized product descriptions and keywords.
-- Recommend selling prices using cost and profit calculations.
-- Prepare marketplace-specific listings for Amazon and Flipkart.
-- Generate social media marketing content and promotional strategies.
-- Provide a centralized seller dashboard.
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
 
-🧠 Multi-Agent Architecture
+Edit `.env` and set `GEMINI_API_KEY` to a newly generated key. Do not commit `.env`. Revoke any key that was previously pasted into chat before creating a replacement.
 
-MarketPilot AI uses specialized AI agents coordinated by a Manager Agent.
+## Initialize the local database
 
-Agent| Responsibility
-Manager Agent| Coordinates the multi-agent workflow
-Product Analysis Agent| Identifies product categories, attributes and target audiences
-Description Agent| Generates SEO titles, descriptions and keywords
-Pricing Agent| Calculates selling prices and estimated profit margins
-Marketplace Agent| Prepares Amazon and Flipkart listing previews
-Marketing Agent| Generates captions, hashtags and promotional strategies
+```powershell
+python init_db.py
+```
 
-⚙️ Technology Stack
+The SQLite database defaults to `marketpilot.db`. Product images default to `uploads/products/`. Both locations can be changed in `.env`.
 
-Technology| Purpose
-Python| Backend development
-Google ADK| Multi-agent orchestration
-Google Gemini API| AI-powered analysis and generation
-Streamlit| Seller dashboard
-SQLite| Data persistence
-Pandas| Data processing
-Pillow| Product image processing
-Python-dotenv| Environment configuration
+The database layer provides product create, read, update, list and delete operations, and stores workflow runs and their partial or completed results. Uploaded image helpers validate JPG, JPEG, PNG and WebP image content, enforce the 5 MB and five-image limits, assign unique filenames, and delete a product's stored images when the product is deleted.
 
-📊 Core Features
+## Run a product AI workflow
 
-1. Seller Dashboard
+Create a product record through the Python database service, note its ID, then run:
 
-- Product image uploads.
-- Product information management.
-- Centralized product history.
+```powershell
+.\.venv\Scripts\python.exe -c "from database.db import initialize_database; from database.products import create_product; initialize_database(); print(create_product({'name':'Tea cup','description':'Blue ceramic cup for tea','specifications':'Color: blue; material: ceramic','manufacturing_cost':100,'packaging_cost':10,'shipping_cost':5,'fixed_marketplace_fees':5,'commission_rate':0.10,'desired_profit_margin':0.20,'sku':'CUP-1'}))"
+.\.venv\Scripts\python.exe run_agents.py --product-id 1
+```
 
-2. AI Product Studio
+The workflow uses ADK LLM agents for product analysis, SEO descriptions, marketing, and Amazon/Flipkart previews. It runs deterministic pricing in Python and saves each successful output and any workflow errors in SQLite. The local app allows 20 workflows per day and one active workflow at a time. Marketplace results are previews only; no listing is published. The Gemini model is configured by `GEMINI_MODEL` and defaults to `gemini-3.8-flash`.
 
-- AI-powered product analysis.
-- Target audience identification.
-- SEO-friendly product descriptions.
+## Run the local dashboard
 
-3. Pricing Intelligence
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
+```
 
-- Manufacturing cost analysis.
-- Packaging and shipping cost calculations.
-- Marketplace fee considerations.
-- Recommended selling price and estimated profit margin.
+Open the local URL printed by Streamlit (normally `http://127.0.0.1:8501`). Demo mode keeps its sample product and uploaded image in the current session only, makes no Gemini calls, labels every simulated AI sample as demo data, and uses the Python pricing engine for sample financial results. The Marketplace Distribution page saves seller review edits and approval status only; it does not publish listings.
 
-4. Marketplace Distribution
+## Run the current checks
 
-- Amazon listing previews.
-- Flipkart listing previews.
-- Marketplace-specific content formatting.
-- External product links.
-- Future official API integration interfaces.
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+```
 
-5. Marketing Center
+## Configuration
 
-- Social media captions.
-- Hashtag generation.
-- Promotional strategies.
-- Marketing content recommendations.
-
-🏗️ Project Structure
-
-MarketPilot-AI/
-│
-├── agents/
-├── database/
-├── integrations/
-├── services/
-├── frontend/
-├── tests/
-├── uploads/
-├── logs/
-│
-├── app.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
+`GEMINI_MODEL` defaults to `gemini-3.8-flash`. Other configurable settings include `DATABASE_PATH`, `UPLOAD_DIR`, `MAX_WORKFLOWS_PER_DAY`, `MAX_IMAGE_MB` and `MAX_IMAGES_PER_PRODUCT`.
